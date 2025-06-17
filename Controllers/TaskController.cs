@@ -54,5 +54,15 @@ public class TaskController : ControllerBase
         return Ok(task);
     }
 
-
+    [HttpDelete("{id}")]
+    public ActionResult<Models.Task> DeleteTask(int id)
+    {
+        var task = TaskDataStore.Current.Tasks.FirstOrDefault(t => t.Id == id);
+        if (task == null)
+        {
+            return NotFound("Task not found");
+        }
+        TaskDataStore.Current.Tasks.Remove(task);
+        return NoContent();
+    }
 }
