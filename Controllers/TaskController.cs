@@ -23,4 +23,20 @@ public class TaskController : ControllerBase
         }
         return Ok(task);
     }
+
+    [HttpPost]
+    public ActionResult<Models.Task> CreateTask(Models.TaskInsert taskInsert)
+    {
+        var newTask = new Models.Task
+        {
+            Id = TaskDataStore.Current.Tasks.Max(t => t.Id) + 1,
+            IsCompleted = false,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now,
+            Title = taskInsert.Title,
+            Description = taskInsert.Description
+        };
+        TaskDataStore.Current.Tasks.Add(newTask);
+        return Ok(newTask);
+    }
 }
