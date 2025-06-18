@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using TaskMasterAPI.Services;
+using Microsoft.EntityFrameworkCore;
+using TaskMasterAPI.Context;
 
 namespace TaskMasterAPI.Controllers;
 
@@ -7,16 +8,23 @@ namespace TaskMasterAPI.Controllers;
 [Route("api/[controller]")]
 public class TaskController : ControllerBase
 {
-    [HttpGet]
-    public ActionResult<IEnumerable<Models.Task>> GetTasks()
+    private readonly AppDbContext _context;
+
+    public TaskController(AppDbContext context)
     {
-        return Ok(TaskDataStore.Current.Tasks);
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Models.Task>>> GetTasks()
+    {
+        return await _context.Tasks.ToListAsync();
     }
 
     [HttpGet("{id}")]
-    public ActionResult<Models.Task> GetTask(int id)
+    public async Task<ActionResult<Models.Task>> GetTask(int id)
     {
-        var task = TaskDataStore.Current.Tasks.FirstOrDefault(t => t.Id == id);
+        var task = await _context.Tasks.FindAsync(id);
         if (task == null)
         {
             return NotFound("Task not found");
@@ -25,25 +33,25 @@ public class TaskController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<Models.Task> CreateTask(Models.TaskInsert taskInsert)
+    public async Task<ActionResult<Models.Task>> CreateTask(Models.TaskInsert taskInsert)
     {
         var newTask = new Models.Task
         {
-            Id = TaskDataStore.Current.Tasks.Max(t => t.Id) + 1,
             IsCompleted = false,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now,
             Title = taskInsert.Title,
             Description = taskInsert.Description
         };
-        TaskDataStore.Current.Tasks.Add(newTask);
+        _context.Tasks.Add(newTask);
+        await _context.SaveChangesAsync();
         return Ok(newTask);
     }
 
     [HttpPut("{id}")]
-    public ActionResult<Models.Task> UpdateTask(int id, Models.TaskInsert taskInsert)
+    public async Task<ActionResult<Models.Task>> UpdateTask(int id, Models.TaskInsert taskInsert)
     {
-        var task = TaskDataStore.Current.Tasks.FirstOrDefault(t => t.Id == id);
+        var task = await _context.Tasks.FindAsync(id);
         if (task == null)
         {
             return NotFound("Task not found");
@@ -51,18 +59,20 @@ public class TaskController : ControllerBase
         task.Title = taskInsert.Title;
         task.Description = taskInsert.Description;
         task.UpdatedAt = DateTime.Now;
+        await _context.SaveChangesAsync();
         return Ok(task);
     }
 
     [HttpDelete("{id}")]
-    public ActionResult<Models.Task> DeleteTask(int id)
+    public async Task<ActionResult<Models.Task>> DeleteTask(int id)
     {
-        var task = TaskDataStore.Current.Tasks.FirstOrDefault(t => t.Id == id);
+        var task = await _context.Tasks.FindAsync(id);
         if (task == null)
         {
             return NotFound("Task not found");
         }
-        TaskDataStore.Current.Tasks.Remove(task);
+        _context.Tasks.Remove(task);
+        await _context.SaveChangesAsync();
         return NoContent();
     }
 }
